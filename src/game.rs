@@ -2,6 +2,7 @@ use crate::user::User;
 use crate::game::lobby::Lobby;
 
 mod lobby;
+mod table;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Settings {
