@@ -2,14 +2,14 @@ use crate::errors::GameError;
 use crate::game::{BidRound, Player, Settings, Team};
 use crate::user::User;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Lobby<'a> {
     pub(crate) settings: Settings,
     pub(crate) players: Vec<Player<'a>>,
 }
 
 impl<'a> Lobby<'a> {
-    fn add_user(&mut self, user: &'a User) {
+    pub(crate) fn add_user(&mut self, user: &'a User) {
         // Create player
         let player = Player::build(
             &user,
