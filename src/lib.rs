@@ -1,5 +1,5 @@
 pub mod user;
-mod game;
+pub mod game;
 mod errors;
 mod card;
 mod deck;

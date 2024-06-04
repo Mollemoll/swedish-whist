@@ -3,8 +3,8 @@ use crate::game::lobby::Lobby;
 use crate::game::Player;
 use crate::deck::Deck;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct Table<'a> {
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Table<'a> {
     north: Player<'a>,
     east: Player<'a>,
     south: Player<'a>,
@@ -12,7 +12,7 @@ struct Table<'a> {
 }
 
 impl<'a> Table<'a> {
-    pub fn new(lobby: Lobby<'a>) -> Table {
+    pub fn new(lobby: &Lobby<'a>) -> Table<'a> {
         // Each player draws a card
         let high_card_draws = Self::high_card_for_dealer_button(lobby);
         let highest_card_team = high_card_draws[0].0.team();
@@ -39,7 +39,7 @@ impl<'a> Table<'a> {
         }
     }
 
-    fn high_card_for_dealer_button(lobby: Lobby<'a>) -> Vec<(Player, Card)> {
+    fn high_card_for_dealer_button(lobby: &Lobby<'a>) -> Vec<(Player<'a>, Card)> {
         let mut deck = Deck::new();
         deck.shuffle();
 
@@ -60,7 +60,7 @@ impl<'a> Table<'a> {
 mod tests {
     use super::*;
     use crate::game::lobby::Lobby;
-    use crate::game::{Game, Settings};
+    use crate::game::{Settings};
     use crate::user::User;
 
     fn setup_users() -> Vec<User> {
@@ -74,7 +74,7 @@ mod tests {
 
     fn setup_lobby() -> Lobby<'static> {
         let settings = Settings { to_win: 13 };
-        Game::new(settings)
+        Lobby::new(settings)
     }
 
     #[test]
@@ -83,7 +83,7 @@ mod tests {
         let mut lobby = setup_lobby();
         users.iter().for_each(|u| lobby.add_user(u));
 
-        let high_card_draws = Table::high_card_for_dealer_button(lobby);
+        let high_card_draws = Table::high_card_for_dealer_button(&lobby);
 
         let cards = high_card_draws.iter()
             .map(|(_, c)| c.clone())
@@ -104,7 +104,7 @@ mod tests {
         let mut lobby = setup_lobby();
         users.iter().for_each(|u| lobby.add_user(u));
 
-        let table = Table::new(lobby);
+        let table = Table::new(&lobby);
 
         assert_eq!(table.north.team(), table.south.team());
         assert_eq!(table.east.team(), table.west.team());

@@ -1,15 +1,23 @@
 use crate::errors::GameError;
-use crate::game::{BidRound, Player, Settings, Team};
+use crate::game::{Game, Player, Settings, Team};
 use crate::user::User;
+use crate::game::table::Table;
 
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct Lobby<'a> {
+pub struct Lobby<'a> {
     pub(crate) settings: Settings,
     pub(crate) players: Vec<Player<'a>>,
 }
 
 impl<'a> Lobby<'a> {
-    pub(crate) fn add_user(&mut self, user: &'a User) {
+    pub fn new(settings: Settings) -> Lobby<'a> {
+        Lobby {
+            settings,
+            players: Vec::new(),
+        }
+    }
+
+    pub fn add_user(&mut self, user: &'a User) {
         // Create player
         let player = Player::build(
             &user,
@@ -42,7 +50,7 @@ impl<'a> Lobby<'a> {
         }
     }
 
-    fn ready_up(&mut self, user: &'a User) {
+    pub fn ready_up(&mut self, user: &'a User) {
         if let Some(player) = self.players
             .iter_mut()
             .find(|p| p.user() == user) {
@@ -89,7 +97,7 @@ impl<'a> Lobby<'a> {
         }
     }
 
-    fn start_game(&self) -> Result<BidRound, GameError> {
+    pub fn start_game(&self) -> Result<Game, GameError> {
         if self.ready_count() != 4 {
             return Err(GameError::RequiresFourReadyPlayers);
         }
@@ -98,7 +106,14 @@ impl<'a> Lobby<'a> {
             return Err(GameError::UnbalancedTeams);
         }
 
-        Ok(BidRound::new(self.settings))
+        let table = Table::new(self);
+
+        Ok(
+            Game::new(
+                self.settings,
+                table,
+            )
+        )
     }
 }
 
@@ -106,17 +121,17 @@ impl<'a> Lobby<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::{Game, Settings, Team};
+    use crate::game::{Settings, Team};
     use super::*;
 
-    fn setup_game() -> Lobby<'static> {
+    fn setup_lobby() -> Lobby<'static> {
         let settings = Settings { to_win: 13 };
-        Game::new(settings)
+        Lobby::new(settings)
     }
 
     #[test]
     fn accepts_user_joining() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
 
         game_lobby.add_user(&user);
@@ -126,7 +141,7 @@ mod tests {
 
     #[test]
     fn denies_player_joining_twice() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
 
         game_lobby.add_user(&user);
@@ -137,7 +152,7 @@ mod tests {
 
     #[test]
     fn accepts_user_leaving() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
 
@@ -151,7 +166,7 @@ mod tests {
 
     #[test]
     fn denies_user_leaving_twice() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
 
@@ -165,7 +180,7 @@ mod tests {
 
     #[test]
     fn assigning_users_evenly_between_teams() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
         let user3 = User::new("Dolly");
@@ -181,7 +196,7 @@ mod tests {
 
     #[test]
     fn denies_5th_player() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
         let user3 = User::new("Dolly");
@@ -201,7 +216,7 @@ mod tests {
 
     #[test]
     fn allowing_players_to_change_team() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
 
         game_lobby.add_user(&user);
@@ -216,7 +231,7 @@ mod tests {
 
     #[test]
     fn player_can_ready_up() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
 
         game_lobby.add_user(&user);
@@ -227,7 +242,7 @@ mod tests {
 
     #[test]
     fn readying_up_twice_doesnt_change_anything() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
 
         game_lobby.add_user(&user);
@@ -239,7 +254,7 @@ mod tests {
 
     #[test]
     fn player_can_unready() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
 
@@ -254,7 +269,7 @@ mod tests {
 
     #[test]
     fn starting_requires_four_ready_players() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
         let user3 = User::new("Dolly");
@@ -271,7 +286,7 @@ mod tests {
 
     #[test]
     fn cant_start_with_unbalanced_teams() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
         let user3 = User::new("Dolly");
@@ -295,7 +310,7 @@ mod tests {
 
     #[test]
     fn can_start_with_four_ready_players() {
-        let mut game_lobby = setup_game();
+        let mut game_lobby = setup_lobby();
         let user = User::new("John Doe");
         let user2 = User::new("Jane Doe");
         let user3 = User::new("Dolly");
@@ -310,13 +325,8 @@ mod tests {
         game_lobby.ready_up(&user3);
         game_lobby.ready_up(&user4);
 
-        assert_eq!(
-            game_lobby.start_game().unwrap(),
-            BidRound {
-                settings: Settings { to_win: 13 },
-                // TODO(2024-05-25 mollemoll): fix move players
-                players: vec![]
-            }
-        );
+        let result = game_lobby.start_game();
+
+        assert!(result.is_ok());
     }
 }
