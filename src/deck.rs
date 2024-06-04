@@ -3,6 +3,7 @@ use crate::card::{
     Suit,
     Rank,
 };
+use crate::hand::Hand;
 
 #[derive(Debug)]
 pub struct Deck {
@@ -31,6 +32,18 @@ impl Deck {
         use rand::thread_rng;
 
         self.cards.shuffle(&mut thread_rng());
+    }
+
+    pub fn deal_hands(&mut self) -> Vec<Hand> {
+        let mut hands= vec![Hand::new(); 4];
+
+        for _ in 0..13 {
+            for hand in hands.iter_mut() {
+                hand.add_card(self.cards.pop().expect("Deck should have enough cards"));
+            }
+        }
+
+        hands
     }
 }
 
@@ -63,5 +76,15 @@ mod tests {
         deck2.shuffle();
 
         assert_ne!(deck1.cards, deck2.cards);
+    }
+
+    #[test]
+    fn deal_hands() {
+        let mut deck = Deck::new();
+        deck.shuffle();
+
+        let hands = deck.deal_hands();
+        assert_eq!(deck.len(), 0);
+        assert_eq!(hands.len(), 4);
     }
 }
